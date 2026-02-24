@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -11,8 +12,8 @@ import { MapModal } from '../../components/MapModal';
 
 const MySwal = withReactContent(Swal);
 
-
 export default function SellerDashboard() {
+    const { t } = useTranslation();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -49,13 +50,14 @@ export default function SellerDashboard() {
 
     const handleCheckIn = async (customer: Customer) => {
         const result = await MySwal.fire({
-            title: 'Iniciar Visita?',
-            html: `Deseja registrar chegada em:<br><b style="color: #84cc16">${customer.companyName}</b>`,
+            title: t('checkin_title'),
+            html: `${t('confirm_checkin_msg')}:<br><b style="color: #84cc16">${customer.companyName}</b>`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#84cc16',
             cancelButtonColor: '#334151',
-            confirmButtonText: 'Sim, fazer check-in',
+            confirmButtonText: t('confirm_button_yes_checkin'),
+            cancelButtonText: t('cancel_button'),
             background: '#1e293b',
             color: '#fff'
         });
@@ -75,24 +77,39 @@ export default function SellerDashboard() {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
-                MySwal.fire({ title: 'Check-in Realizado!', icon: 'success', background: '#1e293b', color: '#fff', timer: 2000, showConfirmButton: false });
+                MySwal.fire({
+                    title: t('checkin_done'),
+                    icon: 'success',
+                    background: '#1e293b',
+                    color: '#fff',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             } catch (err: any) {
-                MySwal.fire({ title: 'Erro', text: 'Erro ao registrar check-in.', icon: 'error', background: '#1e293b', color: '#fff' });
+                MySwal.fire({
+                    title: t('error'),
+                    text: t('checkin_error'),
+                    icon: 'error',
+                    background: '#1e293b',
+                    color: '#fff'
+                });
             }
         }, null, { enableHighAccuracy: true });
     };
 
     const handleCheckOut = async (customer: Customer) => {
         const { value: text, isConfirmed } = await MySwal.fire({
-            title: 'Finalizar Visita',
+            title: t('checkout_title'),
             input: 'textarea',
-            inputLabel: `Resumo da visita em ${customer.companyName}`,
+            inputLabel: `${t('summary_label')} ${customer.companyName}`,
+            inputPlaceholder: t('summary_placeholder'),
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            confirmButtonText: 'Finalizar',
+            confirmButtonText: t('confirm_button_finish'),
+            cancelButtonText: t('cancel_button'),
             background: '#1e293b',
             color: '#fff',
-            inputValidator: (value) => !value && 'O resumo é obrigatório!'
+            inputValidator: (value) => !value && t('summary_required_error')
         });
 
         if (!isConfirmed) return;
@@ -109,9 +126,22 @@ export default function SellerDashboard() {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
-                MySwal.fire({ title: 'Visita Encerrada!', icon: 'success', background: '#1e293b', color: '#fff', timer: 2000, showConfirmButton: false });
+                MySwal.fire({
+                    title: t('checkout_done'),
+                    icon: 'success',
+                    background: '#1e293b',
+                    color: '#fff',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             } catch (err: any) {
-                MySwal.fire({ title: 'Erro', text: 'Erro ao encerrar visita.', icon: 'error', background: '#1e293b', color: '#fff' });
+                MySwal.fire({
+                    title: t('error'),
+                    text: t('checkout_error'),
+                    icon: 'error',
+                    background: '#1e293b',
+                    color: '#fff'
+                });
             }
         }, null, { enableHighAccuracy: true });
     };
@@ -129,7 +159,9 @@ export default function SellerDashboard() {
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <Loader2 className="animate-spin text-check-green" size={42} />
-                        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Sincronizando Clientes</p>
+                        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+                            {t('syncing_customers')}
+                        </p>
                     </div>
                 ) : (
                     customers.map((customer) => (
