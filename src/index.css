@@ -1,0 +1,35 @@
+/* 1. Imports sempre no topo */
+@import 'leaflet/dist/leaflet.css';
+
+/* 2. Tailwind logo abaixo */
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 3. Suas customizações depois */
+.leaflet-container {
+    filter: brightness(0.8) contrast(1.2) !important;
+    background: #0f172a !important;
+    border-radius: 1.5rem;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+/* Deixa o mapa no estilo Dark */
+.leaflet-layer,
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-control-attribution {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+/* Estilo para o marcador "Glow" */
+.custom-marker {
+    background: #84cc16;
+    border: 4px solid #1e293b;
+    border-radius: 50%;
+    box-shadow: 0 0 15px #84cc16, 0 0 30px #84cc16;
+}
