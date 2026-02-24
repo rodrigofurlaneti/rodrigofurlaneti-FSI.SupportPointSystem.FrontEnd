@@ -1,24 +1,27 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/Login';
-import SellerDashboard from './pages/SellerDashboard';
+import LoginPage from './pages/Login/LoginPage'; // Caminho para o Login
+import SellerDashboard from './pages/Dashboard/SellerDashboard'; // Caminho para o Dashboard
+
 export default function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* Rota inicial: Login */}
+                {/* O path="/" define que esta é a página de início. 
+                  Ao abrir http://localhost:5173, o LoginPage será carregado.
+                */}
                 <Route path="/" element={<LoginPage />} />
 
-                {/* Rota para o perfil SELLER */}
+                {/* Rota para o Dashboard do Vendedor */}
                 <Route path="/seller/dashboard" element={<SellerDashboard />} />
 
-                {/* Rota para o perfil ADMIN */}
+                {/* Rota de Admin */}
                 <Route path="/admin/dashboard" element={
-                    <div className="min-h-screen bg-check-blue flex items-center justify-center text-white font-black uppercase tracking-tighter">
+                    <div className="min-h-screen bg-check-blue flex items-center justify-center text-white">
                         Painel Admin em Construção
                     </div>
                 } />
 
-                {/* Fallback: Se a rota não existir, volta para o login */}
+                {/* Se o usuário digitar qualquer outra coisa, volta para o Login */}
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </BrowserRouter>
