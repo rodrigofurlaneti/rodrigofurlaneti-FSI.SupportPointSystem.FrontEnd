@@ -8,13 +8,10 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
 const MySwal = withReactContent(Swal);
-
-// Ícone personalizado para o mapa
 const mapIcon = L.divIcon({
     className: 'custom-marker',
     iconSize: [20, 20],
 });
-
 interface Customer {
     id: string;
     companyName: string;
@@ -23,7 +20,6 @@ interface Customer {
     latitude: number;
     longitude: number;
 }
-
 export default function SellerDashboard() {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
@@ -42,8 +38,6 @@ export default function SellerDashboard() {
         }
         loadCustomers();
     }, []);
-
-    // --- NOVA FUNCIONALIDADE: CHECK-IN ---
     const handleCheckIn = async (customer: Customer) => {
         const result = await MySwal.fire({
             title: 'Iniciar Visita?',
@@ -57,10 +51,7 @@ export default function SellerDashboard() {
             background: '#1e293b',
             color: '#fff'
         });
-
         if (!result.isConfirmed) return;
-
-        // Feedback visual de carregamento
         MySwal.fire({
             title: 'Obtendo GPS...',
             html: 'Aguarde a validação da sua localização.',
@@ -69,19 +60,20 @@ export default function SellerDashboard() {
             background: '#1e293b',
             color: '#fff'
         });
-
         if (!navigator.geolocation) {
-            return MySwal.fire({ title: 'Erro', text: 'GPS não suportado pelo seu dispositivo.', icon: 'error', background: '#1e293b', color: '#fff' });
+            return MySwal.fire({ title: 'Erro', text: 'GPS não suportado.', icon: 'error', background: '#1e293b', color: '#fff' });
         }
-
         navigator.geolocation.getCurrentPosition(async (position) => {
             try {
                 const { latitude, longitude } = position.coords;
                 const token = localStorage.getItem('@CheckVisit:token');
-
-                // Chamada para a rota de Visit
+                const sellerId = localStorage.getItem('@CheckVisit:sellerId');
+                if (!sellerId) {
+                    throw new Error("Sessão expirada. Por favor, faça login novamente.");
+                }
                 await api.post('/Visit/checkin', {
                     customerId: customer.id,
+                    sellerId: sellerId, 
                     latitude: latitude,
                     longitude: longitude
                 }, {
@@ -102,24 +94,89 @@ export default function SellerDashboard() {
                 console.error(err);
                 MySwal.fire({
                     title: 'Falha no Check-in',
-                    text: err.response?.data?.message || 'Verifique se você está próximo ao cliente.',
+                    text: err.response?.data?.message || err.message || 'Erro ao registrar visita.',
                     icon: 'error',
                     background: '#1e293b',
                     color: '#fff'
                 });
             }
         }, (error) => {
-            MySwal.fire({
-                title: 'Erro de Localização',
-                text: 'Não foi possível capturar sua posição real. Ative o GPS.',
-                icon: 'error',
-                background: '#1e293b',
-                color: '#fff'
-            });
+            MySwal.fire({ title: 'Erro de GPS', text: 'Ative o GPS.', icon: 'error', background: '#1e293b', color: '#fff' });
         }, { enableHighAccuracy: true });
     };
-    // -------------------------------------
 
+    const handleCheckOut = async (customer: Customer) => {
+        const { value: text, isConfirmed } = await MySwal.fire({
+            title: 'Finalizar Visita',
+            input: 'textarea',
+            inputLabel: `Resumo da visita em ${customer.companyName}`,
+            inputPlaceholder: 'O que foi resolvido?',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#334151',
+            confirmButtonText: 'Confirmar Check-out',
+            cancelButtonText: 'Voltar',
+            background: '#1e293b',
+            color: '#fff',
+            inputValidator: (value) => {
+                if (!value) return 'O resumo é obrigatório para encerrar!';
+            }
+        });
+        if (!isConfirmed) return;
+        MySwal.fire({
+            title: 'Obtendo localização de saída...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); },
+            background: '#1e293b',
+            color: '#fff'
+        });
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const { latitude, longitude } = position.coords;
+                    const token = localStorage.getItem('@CheckVisit:token');
+                    const sellerId = localStorage.getItem('@CheckVisit:sellerId');
+                    await api.post('/Visit/checkout', {
+                        sellerId: sellerId,
+                        customerId: customer.id,
+                        latitude: latitude,   
+                        longitude: longitude,  
+                        summaryCheckOut: text
+                    }, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    MySwal.fire({
+                        title: 'Finalizado!',
+                        icon: 'success',
+                        background: '#1e293b',
+                        color: '#fff',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+
+                } catch (err: any) {
+                    console.error("Erro no checkout:", err);
+                    MySwal.fire({
+                        title: 'Erro no Check-out',
+                        text: err.response?.data?.message || 'Erro ao comunicar com o servidor.',
+                        icon: 'error',
+                        background: '#1e293b',
+                        color: '#fff'
+                    });
+                }
+            },
+            (error) => {
+                MySwal.fire({
+                    title: 'GPS Falhou',
+                    text: 'Não conseguimos validar sua posição de saída.',
+                    icon: 'error',
+                    background: '#1e293b',
+                    color: '#fff'
+                });
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    };
     return (
         <div className="min-h-screen bg-check-blue text-white font-sans pb-10">
             {/* Header */}
@@ -163,6 +220,14 @@ export default function SellerDashboard() {
                             >
                                 <CheckCircle2 size={16} strokeWidth={3} />
                                 Check-in
+                            </button>
+
+                            <button
+                                    onClick={() => handleCheckOut(customer)}
+                                    className="bg-red-500 hover:bg-red-600 text-white px-5 py-3 rounded-2xl text-[11px] font-black uppercase flex items-center gap-2 shadow-lg shadow-red-500/20"
+                                >
+                                    <LogOut size={16} strokeWidth={3} />
+                                    Check-out
                             </button>
                         </div>
                     ))

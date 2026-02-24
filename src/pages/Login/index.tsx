@@ -49,22 +49,18 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-
         try {
             const response = await api.post('/Auth/login', {
                 cpf: cpf.replace(/\D/g, ''),
                 password: password
             });
-
-            const { token } = response.data;
+            const { token, sellerId } = response.data;
             localStorage.setItem('@CheckVisit:token', token);
-
+            localStorage.setItem('@CheckVisit:sellerId', sellerId);
             const base64Url = token.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
             const payload = JSON.parse(window.atob(base64));
-
             const userRole = payload.role || payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-
             MySwal.fire({
                 title: 'Sucesso!',
                 text: 'Redirecionando...',
@@ -74,9 +70,8 @@ export default function LoginPage() {
                 background: '#334151',
                 color: '#fff'
             });
-
             setTimeout(() => {
-                if (userRole === 'ADMIN') {
+                if (userRole.toUpperCase() === 'ADMIN') {
                     navigate('/admin/dashboard');
                 } else {
                     navigate('/seller/dashboard');
@@ -84,9 +79,10 @@ export default function LoginPage() {
             }, 1500);
 
         } catch (err: any) {
+            console.error(err);
             MySwal.fire({
                 title: 'Erro',
-                text: 'CPF ou senha incorretos.',
+                text: err.response?.data || 'CPF ou senha incorretos.',
                 icon: 'error',
                 confirmButtonColor: '#84cc16',
                 background: '#334151',
