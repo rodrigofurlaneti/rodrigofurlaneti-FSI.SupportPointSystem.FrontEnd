@@ -1,12 +1,13 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+Ôªøimport { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/Login/LoginPage';
 import SellerDashboard from './pages/Dashboard/SellerDashboard';
 import AdminDashboard from './pages/Dashboard/AdminDashboard';
-import AdminSellerForm from './pages/Admin/Seller/AdminSellerForm';
 import AdminSellerList from './pages/Admin/Seller/AdminSellerList';
-import AdminCustomerForm from './pages/Admin/Customer/AdminCustomerForm';
+import AdminSellerCreate from './pages/Admin/Seller/AdminSellerCreate';
+import AdminSellerEdit from './pages/Admin/Seller/AdminSellerEdit';
 import AdminCustomerList from './pages/Admin/Customer/AdminCustomerList';
-
+import AdminCustomerCreate from './pages/Admin/Customer/AdminCustomerCreate'; 
+import AdminCustomerEdit from './pages/Admin/Customer/AdminCustomerEdit';
 export function AppRoutes() {
     return (
         <BrowserRouter>
@@ -21,16 +22,19 @@ export function AppRoutes() {
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
                 {/* CRUD de Vendedores */}
-                <Route path="/admin/sellers/new" element={<AdminSellerForm />} />
                 <Route path="/admin/sellers/list" element={<AdminSellerList />} />
-                {/* Rota para ediÁ„o reaproveitando o formul·rio */}
-                <Route path="/admin/sellers/edit/:id" element={<AdminSellerForm />} />
+                <Route path="/admin/sellers/new" element={<AdminSellerCreate />} />
+                <Route path="/admin/sellers/edit/:id" element={<AdminSellerEdit />} />
 
                 {/* CRUD de Clientes */}
-                <Route path="/admin/customers/new" element={<AdminCustomerForm />} />
                 <Route path="/admin/customers/list" element={<AdminCustomerList />} />
+                <Route path="/admin/customers/new" element={<AdminCustomerCreate />} />
+                <Route path="/admin/customers/edit/:id" element={<AdminCustomerEdit />} />
 
-                {/* Fallback: Redireciona para o login se a rota n„o existir */}
+                {/* Hist√≥rico de Visitas */}
+                <Route path="/admin/visits/history" element={<div className="p-10 text-white">Hist√≥rico em constru√ß√£o</div>} />
+
+                {/* Fallback de Seguran√ßa: Redireciona rotas inexistentes para o login */}
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </BrowserRouter>

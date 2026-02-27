@@ -6,18 +6,18 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
 import { HeaderAdmin } from '../../../components/HeaderAdmin';
-import api from '../../../services/api';
+import { sellerService } from '../../../services/sellerService';
 
 const MySwal = withReactContent(Swal);
 
-// Interface baseada na sua tabela Sellers do SQL
+// Interface alinhada ao retorno da procedure SpGetAllSellers
 interface Seller {
     id: string;
     name: string;
     phone: string;
     email: string;
     active: boolean;
-    cpf?: string; // Vem do Join com a tabela Users
+    cpf: string; // CPF agora vem do JOIN com a tabela Users
 }
 
 export default function AdminSellerList() {
@@ -33,13 +33,19 @@ export default function AdminSellerList() {
 
     const loadSellers = async () => {
         try {
-            const token = localStorage.getItem('@CheckVisit:token');
-            const response = await api.get('/Admin/Sellers', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setSellers(response.data);
-        } catch (err) {
+            setLoading(true);
+            // Chama o service que executa a procedure SpGetAllSellers
+            const data = await sellerService.getAll();
+            setSellers(data as Seller[]);
+        } catch (err: any) {
             console.error("Erro ao carregar vendedores", err);
+            MySwal.fire({
+                title: t('error'),
+                text: t('load_error_msg') || 'Erro ao conectar com o banco de dados.',
+                icon: 'error',
+                background: '#1e293b',
+                color: '#fff'
+            });
         } finally {
             setLoading(false);
         }
@@ -47,34 +53,50 @@ export default function AdminSellerList() {
 
     const handleDelete = async (seller: Seller) => {
         const result = await MySwal.fire({
-            title: t('error'), // Reaproveitando estilo de erro para aten  o
-            text: `${t('confirm_button_finish')}? ${seller.name}`,
+            title: t('confirm_action_title') || 'Tem certeza?',
+            text: `${t('delete_confirm_msg') || 'Deseja excluir o vendedor'}: ${seller.name}`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
             cancelButtonColor: '#334151',
-            confirmButtonText: t('cancel_button'), // Ajustar chave se necess rio
+            confirmButtonText: t('confirm_button_delete') || 'Sim, excluir!',
+            cancelButtonText: t('cancel_button'),
             background: '#1e293b',
             color: '#fff'
         });
+
         if (result.isConfirmed) {
             try {
-                const token = localStorage.getItem('@CheckVisit:token');
-                await api.delete(`/Admin/Sellers/${seller.id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
+                // Chama a procedure SpDeleteSeller (que limpa Sellers e Users)
+                await sellerService.delete(seller.id);
+
+                setSellers(prev => prev.filter(s => s.id !== seller.id));
+
+                MySwal.fire({
+                    title: t('deleted_success') || 'Excluído!',
+                    icon: 'success',
+                    background: '#1e293b',
+                    color: '#fff',
+                    timer: 1500,
+                    showConfirmButton: false
                 });
-                setSellers(sellers.filter(s => s.id !== seller.id));
-                MySwal.fire({ title: 'Deleted!', icon: 'success', background: '#1e293b', color: '#fff', timer: 1500, showConfirmButton: false });
-            } catch (err) {
-                MySwal.fire({ title: 'Erro', text: 'Falha ao deletar.', icon: 'error', background: '#1e293b', color: '#fff' });
+            } catch (err: any) {
+                MySwal.fire({
+                    title: t('error'),
+                    text: err.response?.data?.message || 'Falha ao deletar o registro.',
+                    icon: 'error',
+                    background: '#1e293b',
+                    color: '#fff'
+                });
             }
         }
     };
 
-    // Filtro din mico
+    // Busca por Nome, Email ou CPF (sem formatação)
     const filteredSellers = sellers.filter(s =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.email.toLowerCase().includes(searchTerm.toLowerCase())
+        s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.cpf.includes(searchTerm.replace(/\D/g, ''))
     );
 
     return (
@@ -82,7 +104,6 @@ export default function AdminSellerList() {
             <HeaderAdmin userName="RODRIGO FURLANETTI" onLogout={() => navigate('/')} />
 
             <main className="p-6 pt-12 max-w-6xl mx-auto">
-                {/* Cabe alho de A  es */}
                 <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
                     <button
                         onClick={() => navigate('/admin/dashboard')}
@@ -95,7 +116,7 @@ export default function AdminSellerList() {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                         <input
                             type="text"
-                            placeholder={t('summary_placeholder')}
+                            placeholder={t('summary_placeholder') || "Buscar por nome, email ou CPF..."}
                             className="w-full bg-check-card border border-white/5 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-check-green/30 transition-all text-sm"
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -109,12 +130,13 @@ export default function AdminSellerList() {
                     </button>
                 </div>
 
-                {/* Tabela de Vendedores */}
                 <div className="bg-check-card rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <Loader2 className="animate-spin text-check-green" size={42} />
-                            <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">{t('syncing_customers')}</p>
+                            <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+                                {t('syncing_customers') || "Sincronizando dados..."}
+                            </p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -122,40 +144,65 @@ export default function AdminSellerList() {
                                 <thead>
                                     <tr className="bg-white/5 text-slate-400 text-[10px] uppercase tracking-[0.2em]">
                                         <th className="p-6 font-bold">{t('name')}</th>
-                                        <th className="p-6 font-bold">Email</th>
+                                        <th className="p-6 font-bold">CPF</th>
+                                        <th className="p-6 font-bold">{t('email')}</th>
                                         <th className="p-6 font-bold">{t('phone')}</th>
                                         <th className="p-6 font-bold text-right">{t('available_actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {filteredSellers.map((seller) => (
-                                        <tr key={seller.id} className="hover:bg-white/[0.02] transition-colors group">
-                                            <td className="p-6 font-bold italic text-sm">{seller.name}</td>
-                                            <td className="p-6 text-slate-400 text-sm">{seller.email}</td>
-                                            <td className="p-6 text-slate-400 text-sm">{seller.phone}</td>
-                                            <td className="p-6">
-                                                <div className="flex justify-end gap-3 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => navigate(`/admin/sellers/edit/${seller.id}`)}
-                                                        className="p-2 hover:bg-check-green/20 text-check-green rounded-xl transition-all"
-                                                    >
-                                                        <Edit size={18} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(seller)}
-                                                        className="p-2 hover:bg-red-500/20 text-red-400 rounded-xl transition-all"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
+                                    {filteredSellers.length > 0 ? (
+                                        filteredSellers.map((seller) => (
+                                            <tr key={seller.id} className="hover:bg-white/[0.02] transition-colors group">
+                                                <td className="p-6">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold italic text-sm">{seller.name}</span>
+                                                        {!seller.active && (
+                                                            <span className="text-[9px] text-red-500 font-bold uppercase">{t('user_inactive') || 'Inativo'}</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="p-6 text-slate-400 text-sm">
+                                                    {seller.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}
+                                                </td>
+                                                <td className="p-6 text-slate-400 text-sm">{seller.email}</td>
+                                                <td className="p-6 text-slate-400 text-sm">{seller.phone || '-'}</td>
+                                                <td className="p-6">
+                                                    <div className="flex justify-end gap-3 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => navigate(`/admin/sellers/edit/${seller.id}`)}
+                                                            title={t('edit')}
+                                                            className="p-2 hover:bg-check-green/20 text-check-green rounded-xl transition-all"
+                                                        >
+                                                            <Edit size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(seller)}
+                                                            title={t('delete')}
+                                                            className="p-2 hover:bg-red-500/20 text-red-400 rounded-xl transition-all"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={5} className="p-10 text-center text-slate-500 uppercase text-[10px] font-bold tracking-widest">
+                                                {t('no_results') || "Nenhum vendedor encontrado"}
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     )}
                 </div>
+
+                <p className="text-center mt-12 text-[10px] text-slate-600 font-bold uppercase tracking-[0.3em]">
+                    FSI Point System • Management Suite 2026
+                </p>
             </main>
         </div>
     );

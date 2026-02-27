@@ -1,61 +1,69 @@
-﻿import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Save, User, Mail, Phone, Lock } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
 import { HeaderAdmin } from '../../../components/HeaderAdmin';
 import { Input } from '../../../components/Input';
 import { Button } from '../../../components/Button';
-import api from '../../../services/api';
+import { sellerService } from '../../../services/sellerService';
 
 const MySwal = withReactContent(Swal);
 
-export default function AdminSellerForm() {
+export default function AdminSellerEdit() {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
 
-    // States para bater com as tabelas Users e Sellers do SQL
     const [name, setName] = useState('');
     const [cpf, setCpf] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [password, setPassword] = useState('');
+    const [active, setActive] = useState(true);
     const [loading, setLoading] = useState(false);
 
-    // Formata  o de CPF homologada para o padr o brasileiro
-    const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length <= 11) {
-            value = value.replace(/(\d{3})(\d)/, "$1.$2")
-                .replace(/(\d{3})(\d)/, "$1.$2")
-                .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-            setCpf(value);
+    // Carrega os dados do vendedor ao montar a página
+    useEffect(() => {
+        async function loadSellerData() {
+            if (!id) return;
+            try {
+                const data = await sellerService.getById(id);
+                setName(data.name);
+                setCpf(data.cpf);
+                setEmail(data.email);
+                setPhone(data.phone || '');
+                setActive(data.active);
+            } catch (err: any) {
+                MySwal.fire({
+                    title: t('error'),
+                    text: t('seller_not_found'),
+                    icon: 'error'
+                });
+                navigate('/admin/dashboard');
+            }
         }
-    };
+        loadSellerData();
+    }, [id, navigate, t]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!id) return;
         setLoading(true);
 
         try {
-            const token = localStorage.getItem('@CheckVisit:token');
-
-            // Endpoint que processa o cadastro duplo (User + Seller)
-            await api.post('/Admin/Sellers', {
+            // Chama a procedure SpUpdateSeller através do service
+            await sellerService.update(id, {
                 name,
-                cpf: cpf.replace(/\D/g, ''),
                 email,
                 phone,
-                password,
-                role: 'SELLER'
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
+                cpf: cpf.replace(/\D/g, ''),
+                active
             });
 
             MySwal.fire({
-                title: t('login_success_title'), // Reaproveitando "Sucesso!"
+                title: t('update_success'),
                 icon: 'success',
                 timer: 2000,
                 showConfirmButton: false,
@@ -65,9 +73,10 @@ export default function AdminSellerForm() {
 
             setTimeout(() => navigate('/admin/dashboard'), 2000);
         } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.response?.data || t('login_error_msg');
             MySwal.fire({
                 title: t('error'),
-                text: err.response?.data?.message || t('login_error_msg'),
+                text: errorMessage,
                 icon: 'error',
                 background: '#1e293b',
                 color: '#fff'
@@ -79,11 +88,9 @@ export default function AdminSellerForm() {
 
     return (
         <div className="min-h-screen bg-check-blue text-white font-sans">
-            {/* HeaderAdmin personalizado com o nome do Administrador */}
             <HeaderAdmin userName="RODRIGO FURLANETTI" onLogout={() => navigate('/')} />
 
             <main className="p-6 pt-12 max-w-2xl mx-auto">
-                {/* Bot o Voltar alinhado ao estilo clean */}
                 <button
                     onClick={() => navigate('/admin/dashboard')}
                     className="flex items-center gap-2 text-slate-500 hover:text-check-green transition-colors mb-8 uppercase text-[10px] font-bold tracking-[0.2em]"
@@ -93,17 +100,15 @@ export default function AdminSellerForm() {
 
                 <div className="text-center mb-10">
                     <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">
-                        {t('add_new')} {t('manage_sellers')}
+                        {t('edit_seller')}
                     </h2>
-                    <div className="h-1 w-20 bg-check-green mx-auto rounded-full"></div>
+                    <div className="h-1 w-20 bg-check-green mx-auto rounded-full shadow-[0_0_10px_rgba(132,204,22,0.3)]"></div>
                 </div>
 
-                {/* Card do Formul rio com cantos arredondados de 2.5rem */}
                 <div className="bg-check-card p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <Input
-                            label={t('name') || "Nome Completo"}
-                            placeholder="Ex: João da Silva"
+                            label={t('name')}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
@@ -111,49 +116,45 @@ export default function AdminSellerForm() {
 
                         <Input
                             label={t('cpf')}
-                            placeholder="000.000.000-00"
                             value={cpf}
-                            onChange={handleCpfChange}
-                            required
+                            disabled // CPF não deve ser alterado na edição
                         />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Input
-                                label="Email"
+                                label={t('email')}
                                 type="email"
-                                placeholder="vendedor@empresa.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
                             <Input
-                                label={t('phone') || "Telefone"}
-                                placeholder="(19) 99999-9999"
+                                label={t('phone')}
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
                             />
                         </div>
 
-                        <Input
-                            label={t('password')}
-                            isPassword
-                            placeholder="        "
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                        <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/10">
+                            <input
+                                type="checkbox"
+                                id="active"
+                                checked={active}
+                                onChange={(e) => setActive(e.target.checked)}
+                                className="w-5 h-5 accent-check-green"
+                            />
+                            <label htmlFor="active" className="text-sm font-bold uppercase tracking-wider">
+                                {t('user_active')}
+                            </label>
+                        </div>
 
                         <div className="pt-4">
                             <Button type="submit" loading={loading} className="flex gap-3 justify-center">
-                                <Save size={20} /> {t('confirm_button_finish')}
+                                <Save size={20} /> {t('save_changes')}
                             </Button>
                         </div>
                     </form>
                 </div>
-
-                <p className="text-center mt-12 text-[10px] text-slate-600 font-bold uppercase tracking-[0.3em]">
-                    FSI Point System   Management Suite 2026
-                </p>
             </main>
         </div>
     );
