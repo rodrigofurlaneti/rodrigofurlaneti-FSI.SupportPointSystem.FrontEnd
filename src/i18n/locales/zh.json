@@ -1,7 +1,7 @@
-﻿{
+{
   "welcome": "欢迎",
   "login_subtitle": "早上好！准备好出发了吗？",
-  "cpf": "证件号 / CPF",
+  "cpf": "证件号 / Cpf",
   "password": "密码",
   "enter_system": "登录系统",
   "login_success_title": "成功！",
@@ -21,5 +21,19 @@
   "summary_required_error": "摘要是必填项！",
   "checkout_done": "访问已关闭！",
   "checkout_error": "关闭访问时出错。",
-  "syncing_customers": "正在同步客户"
+  "syncing_customers": "正在同步客户",
+  "admin_panel_title": "管理面板",
+  "manage_sellers": "管理销售员",
+  "manage_customers": "管理客户",
+  "visit_history": "访问记录",
+  "available_actions": "可用操作",
+  "add_new": "新增",
+  "list_all": "列出所有",
+  "performance": "业绩",
+  "view_map": "查看地图",
+  "recent_checkins": "最近签到",
+  "audit_logs": "审计日志",
+  "name": "姓名",
+  "email": "电子邮件",
+  "phone": "电话"
 }

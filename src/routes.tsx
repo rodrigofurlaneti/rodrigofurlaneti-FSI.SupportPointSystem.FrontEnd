@@ -1,6 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import LoginPage from './pages/Login';
-import SellerDashboard from './pages/SellerDashboard'; // Crie esse arquivo conforme a prototipação
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/Login/LoginPage';
+import SellerDashboard from './pages/Dashboard/SellerDashboard';
+import AdminDashboard from './pages/Dashboard/AdminDashboard';
+import AdminSellerForm from './pages/Admin/Seller/AdminSellerForm';
+import AdminSellerList from './pages/Admin/Seller/AdminSellerList';
+import AdminCustomerForm from './pages/Admin/Customer/AdminCustomerForm';
+import AdminCustomerList from './pages/Admin/Customer/AdminCustomerList';
 
 export function AppRoutes() {
     return (
@@ -12,8 +17,21 @@ export function AppRoutes() {
                 {/* Rotas de Vendedor */}
                 <Route path="/seller/dashboard" element={<SellerDashboard />} />
 
-                {/* Rota de Admin (vazia por enquanto) */}
-                <Route path="/admin/dashboard" element={<div>Painel Admin em construção</div>} />
+                {/* Painel Administrativo Principal */}
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+                {/* CRUD de Vendedores */}
+                <Route path="/admin/sellers/new" element={<AdminSellerForm />} />
+                <Route path="/admin/sellers/list" element={<AdminSellerList />} />
+                {/* Rota para edição reaproveitando o formulário */}
+                <Route path="/admin/sellers/edit/:id" element={<AdminSellerForm />} />
+
+                {/* CRUD de Clientes */}
+                <Route path="/admin/customers/new" element={<AdminCustomerForm />} />
+                <Route path="/admin/customers/list" element={<AdminCustomerList />} />
+
+                {/* Fallback: Redireciona para o login se a rota não existir */}
+                <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </BrowserRouter>
     );

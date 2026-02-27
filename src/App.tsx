@@ -1,27 +1,35 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/Login/LoginPage'; // Caminho para o Login
-import SellerDashboard from './pages/Dashboard/SellerDashboard'; // Caminho para o Dashboard
+import LoginPage from './pages/Login/LoginPage';
+import SellerDashboard from './pages/Dashboard/SellerDashboard';
+import AdminDashboard from './pages/Dashboard/AdminDashboard';
+import AdminSellerForm from './pages/Admin/Seller/AdminSellerForm';
+import AdminSellerList from './pages/Admin/Seller/AdminSellerList';
+import AdminCustomerForm from './pages/Admin/Customer/AdminCustomerForm';
+import AdminCustomerList from './pages/Admin/Customer/AdminCustomerList';
 
 export default function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* O path="/" define que esta é a página de início. 
-                  Ao abrir http://localhost:5173, o LoginPage será carregado.
-                */}
+                {/* Página de Início */}
                 <Route path="/" element={<LoginPage />} />
 
-                {/* Rota para o Dashboard do Vendedor */}
+                {/* Fluxo do Vendedor */}
                 <Route path="/seller/dashboard" element={<SellerDashboard />} />
 
-                {/* Rota de Admin */}
-                <Route path="/admin/dashboard" element={
-                    <div className="min-h-screen bg-check-blue flex items-center justify-center text-white">
-                        Painel Admin em Construção
-                    </div>
-                } />
+                {/* Fluxo Principal do Admin */}
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
-                {/* Se o usuário digitar qualquer outra coisa, volta para o Login */}
+                {/* Rotas de Gestão de Vendedores */}
+                <Route path="/admin/sellers/new" element={<AdminSellerForm />} />
+                <Route path="/admin/sellers/list" element={<AdminSellerList />} />
+                <Route path="/admin/sellers/edit/:id" element={<AdminSellerForm />} />
+
+                {/* Rotas de Gestão de Clientes */}
+                <Route path="/admin/customers/new" element={<AdminCustomerForm />} />
+                <Route path="/admin/customers/list" element={<AdminCustomerList />} />
+
+                {/* Redirecionamento de segurança */}
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </BrowserRouter>
