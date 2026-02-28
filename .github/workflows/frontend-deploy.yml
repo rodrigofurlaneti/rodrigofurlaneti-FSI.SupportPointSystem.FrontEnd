@@ -1,0 +1,27 @@
+﻿name: Deploy CheckVisit FrontEnd
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t checkvisit-front .
+
+      - name: Run Container
+        run: |
+          docker stop checkvisit-front-container || true
+          docker rm checkvisit-front-container || true
+          # Usaremos a porta 3000 para não conflitar com a API na porta 80
+          docker run -d \
+            --name checkvisit-front-container \
+            --restart always \
+            -p 3000:80 \
+            checkvisit-front
