@@ -9,7 +9,7 @@ jobs:
     runs-on: self-hosted
     
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Build Docker Image
@@ -17,11 +17,18 @@ jobs:
 
       - name: Run Container
         run: |
+          # Para o container antigo se ele existir, mas não trava se não existir
           docker stop checkvisit-front-container || true
           docker rm checkvisit-front-container || true
-          # Usaremos a porta 3000 para não conflitar com a API na porta 80
+          
+          # Executa o novo container mapeando a porta 3000 da EC2 para a 80 do Nginx
           docker run -d \
             --name checkvisit-front-container \
             --restart always \
             -p 3000:80 \
             checkvisit-front
+
+      - name: Docker System Prune
+        run: |
+          # Limpeza automática para evitar o erro "No space left on device" no futuro
+          docker system prune -f
