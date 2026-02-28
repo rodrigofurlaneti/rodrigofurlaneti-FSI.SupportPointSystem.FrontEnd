@@ -12,6 +12,7 @@ export function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>
+
                 {/* Rota inicial: Login */}
                 <Route path="/" element={<LoginPage />} />
 
