@@ -9,7 +9,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 3. Suas customizações depois */
+/* 3. Suas customizaÃ§Ãµes depois */
 .leaflet-container {
     filter: brightness(0.8) contrast(1.2) !important;
     background: #0f172a !important;

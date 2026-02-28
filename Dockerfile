@@ -1,13 +1,9 @@
-﻿# Estágio 1: Build do React
+﻿# No seu Dockerfile do Front-end
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+# O comando abaixo remove o caractere BOM de todos os arquivos caso ele ainda exista
+RUN find . -type f -exec sed -i '1s/^\xEF\xBB\xBF//' {} +
 RUN npm run build
-
-# Estágio 2: Servidor de Produção (Nginx)
-FROM nginx:stable-alpine
-COPY --from=build /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
